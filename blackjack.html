@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="blackjack.css">
+  <title>Blackjack</title>
+</head>
+<body>
+  <div class="js-container"></div>
+
+  <!-- <script src="blackjack.js"></script> -->
+  <script src="https://unpkg.com/supersimpledev/dayjs.js"></script>
+
+  <script src="https://unpkg.com/supersimpledev/react.js"></script>
+  <script src="https://unpkg.com/supersimpledev/chatbot.js"></script>
+  <script src="https://unpkg.com/supersimpledev/react-dom.js"></script>
+
+  <script src="https://unpkg.com/supersimpledev/babel.js"></script>
+  <script type="text/babel">
+    function checkHand(target) {
+      let handValue = 0
+      let aceCount = 0
+
+      target.forEach(c => {
+        const { rank, value } = c
+      
+        if (typeof rank === "number") {
+          handValue += value
+        } 
+        else if (rank === "ace") {
+          aceCount++
+        } 
+        else {
+          handValue += 10 
+        }
+      })
+    
+      for (let i = 0; i < aceCount; i++) {
+        if (handValue <= 10) {
+          handValue += 11
+        } else {
+          handValue += 1
+        }
+      }
+    
+      return handValue
+    }
+
+    function getCard(count, arr, setArr, deck, setDeck) {
+      let tempDeck = [...deck]
+      let newArr = [...arr]
+
+      for(let i = 0; i < count; i++) {
+        const randomNum = Math.floor((Math.random() * tempDeck.length)) 
+        let cardDealt = tempDeck[randomNum]
+
+        newArr.push(cardDealt)
+        tempDeck.splice(randomNum, 1)
+      } 
+
+      setDeck(tempDeck)
+      setArr(newArr)
+    }
+
+    function TableContainer({children, playerHand, dealerHand}) {
+      return (
+        <div id="table-container">
+          <div id="dealer-side" className="participant-side">
+            <div className="participant-info">
+              <div className="profile">
+                <img src="img/dealer.png" alt=""/>
+              </div>
+            </div>
+            <div className="dealer-cards-container cards-container">
+              {dealerHand.map((card, i) => (
+                <div key={i} className="dealer-cards dealt-card">
+                  <img src={`img/playing-cards/png-cards/${card.rank}_of_${card.suit}.png`} alt=""/>  
+                </div>  
+              ))}
+            </div>  
+          </div>
+
+          <div id="player-side" className="participant-side">
+            <div className="player-cards-container cards-container">
+              {playerHand.map((card, i) => (
+                <div key={i} className="dealer-cards dealt-card">
+                  <img src={`img/playing-cards/png-cards/${card.rank}_of_${card.suit}.png`} alt=""/>  
+                </div>  
+              ))}
+            </div>
+            <div className="participant-info">
+              <div className="profile">
+                <img src="img/player.png" alt=""/>
+              </div>
+            </div>
+          </div>
+          {children}
+        </div>
+      )
+    }
+
+    function PlayerAction({playerHand, setPlayerHand, dealerHand, setDealerHand, deck, setDeck}) {
+      const playerValue = checkHand(playerHand)
+      const dealerValue = checkHand(dealerHand)
+      
+      function playerHit() { //Nanti tambahin if statement kalau player split
+        getCard(1, playerHand, setPlayerHand, deck, setDeck)
+      }
+
+      function playerStand() {
+        if(playerValue >= dealerValue && playerValue <= 21) {
+          dealerPlay()
+        }
+      }
+
+      function dealerPlay() {
+        let tempDeck = [...deck]
+        let newArr = [...dealerHand]
+        let newValue = checkHand(dealerHand)
+
+        while(newValue <= playerValue && newValue <= 21) {
+          const randomNum = Math.floor((Math.random() * tempDeck.length)) 
+          let cardDealt = tempDeck[randomNum]
+
+          newValue += cardDealt.value
+          newArr.push(cardDealt)
+          tempDeck.splice(randomNum, 1)
+        }
+        setDeck(tempDeck)
+        setDealerHand(newArr)
+      }
+
+      console.log(playerValue)
+      return (
+        <div className="player-action-container">
+          <button onClick={playerHit}>hit</button>
+          <button onClick={playerStand}>stand</button>
+          <button >double down</button>
+          <button >split</button>
+        </div>
+      )
+    }
+
+    function App() {
+      let [deck, setDeck] = React.useState([])
+      let [playerHand, setPlayerHand] = React.useState([])
+      let [playerHand2, setPlayerHand2] = React.useState([])
+      let [dealerHand, setDealerHand] = React.useState([])
+      let [playerDealt, setPlayerDealt] = React.useState(false) 
+
+      //Create deck
+      React.useEffect(() => {
+        const suits = ["spades", "hearts", "diamonds", "clubs"]
+        const ranks = [2,3,4,5,6,7,8,9,10,"ace","jack","queen","king"]
+        let newDeck = []
+        
+        for(let n of suits) { 
+          for(let r of ranks) { 
+            let value = r 
+
+            if(typeof value !== "number") { 
+              value = r === "ace" ? [1,11] : 10 
+            } 
+
+            newDeck.push({ 
+              suit: n, 
+              rank: r, 
+              value: value 
+            })
+          }
+        }
+        setDeck(newDeck)
+        setPlayerDealt(true)
+      }, [])
+
+      //Deal card
+      React.useEffect(() => {
+        if(deck.length === 0) {
+          return
+        }
+
+        let tempDeck = [...deck]
+        let newPlayer = []
+        let newDealer = []
+
+        for(let i = 0; i < 2; i++) {
+          const r1 = Math.floor((Math.random() * tempDeck.length)) 
+          newPlayer.push(tempDeck[r1])
+          tempDeck.splice(r1, 1)
+
+          const r2 = Math.floor((Math.random() * tempDeck.length)) 
+          newDealer.push(tempDeck[r2])
+          tempDeck.splice(r2, 1)
+        } 
+
+        setPlayerHand(newPlayer)
+        setDealerHand(newDealer)
+        setDeck(tempDeck)
+      }, [playerDealt])
+
+      return (
+        <div id="app-container">
+          <TableContainer 
+            playerHand={playerHand}  
+            dealerHand={dealerHand}  
+          >
+            <PlayerAction
+              playerHand={playerHand}  
+              setPlayerHand={setPlayerHand}
+              dealerHand={dealerHand}
+              setDealerHand={setDealerHand}
+              deck={deck}
+              setDeck={setDeck}
+            />
+          </TableContainer>
+        </div>
+      )
+    }
+
+    const container = document.querySelector(".js-container")
+    const root = ReactDOM.createRoot(container)
+    root.render(<App/>)
+  </script>
+</body>
+</html>
