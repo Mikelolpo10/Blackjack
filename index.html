@@ -43,6 +43,10 @@
           handValue += 1
         }
       }
+
+      if(handValue > 21) {
+        return `bust ${handValue}`
+      }
     
       return handValue
     }
@@ -100,16 +104,23 @@
       )
     }
 
-    function PlayerAction({playerHand, setPlayerHand, dealerHand, setDealerHand, deck, setDeck}) {
+    function PlayerAction({playerHand, setPlayerHand, dealerHand, setDealerHand, deck, setDeck, setResult}) {     
       const playerValue = checkHand(playerHand)
       const dealerValue = checkHand(dealerHand)
       
-      function playerHit() { //Nanti tambahin if statement kalau player split
+      React.useEffect(() => {
+        if(typeof playerValue === "string") {
+            setResult("Player bust, Dealer win")
+          } 
+        }, [playerHand])
+
+      function playerHit() { //Nanti tambahin if statement kalau player split    
         getCard(1, playerHand, setPlayerHand, deck, setDeck)
+        const playerValue = checkHand(playerHand)
       }
 
       function playerStand() {
-        if(playerValue >= dealerValue && playerValue <= 21) {
+        if(playerValue > dealerValue && playerValue <= 21) {
           dealerPlay()
         }
       }
@@ -127,11 +138,15 @@
           newArr.push(cardDealt)
           tempDeck.splice(randomNum, 1)
         }
+
+        if(playerValue < newValue) {
+          setResult(`Dealer win`)
+        }
+
         setDeck(tempDeck)
         setDealerHand(newArr)
       }
 
-      console.log(playerValue)
       return (
         <div className="player-action-container">
           <button onClick={playerHit}>hit</button>
@@ -142,12 +157,21 @@
       )
     }
 
+    function Result({playerHand, dealerHand, result}) {
+      return (
+        <div id="result-popup">
+          {result}
+        </div>
+      )
+    }
+
     function App() {
       let [deck, setDeck] = React.useState([])
       let [playerHand, setPlayerHand] = React.useState([])
       let [playerHand2, setPlayerHand2] = React.useState([])
       let [dealerHand, setDealerHand] = React.useState([])
       let [playerDealt, setPlayerDealt] = React.useState(false) 
+      let [result, setResult] = React.useState("")
 
       //Create deck
       React.useEffect(() => {
@@ -194,10 +218,22 @@
           tempDeck.splice(r2, 1)
         } 
 
-        setPlayerHand(newPlayer)
         setDealerHand(newDealer)
+        setPlayerHand(newPlayer)
         setDeck(tempDeck)
       }, [playerDealt])
+
+      //Set result
+      React.useEffect(() => {          
+        const playerValue = checkHand(playerHand)
+        const dealerValue = checkHand(dealerHand)
+
+        if(typeof playerValue === "string") {
+          setResult(`Player bust, Dealer win`)
+        } else if(typeof dealerValue === "string") {
+          setResult(`Dealer bust, Player win`) //bener tapi kalo ace di dealerPlay jadi g detect 
+        } 
+        }, [dealerHand])
 
       return (
         <div id="app-container">
@@ -212,6 +248,12 @@
               setDealerHand={setDealerHand}
               deck={deck}
               setDeck={setDeck}
+              setResult={setResult}
+            />
+            <Result
+              playerHand={playerHand}  
+              dealerHand={dealerHand}
+              result={result}
             />
           </TableContainer>
         </div>
